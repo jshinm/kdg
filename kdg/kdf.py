@@ -21,6 +21,8 @@ class kdf(KernelDensityGraph):
         self.polytope_cov = {}
         self.polytope_cardinality = {}
         self.polytope_mean_cov = {}
+        self.tree_to_leaf_high = {}
+        self.tree_to_leaf_low = {}
         self.kwargs = kwargs
         self.covariance_types = covariance_types
         self.criterion = criterion
@@ -38,6 +40,47 @@ class kdf(KernelDensityGraph):
         X, y = check_X_y(X, y)
         self.labels = np.unique(y)
         self.rf_model = rf(**self.kwargs).fit(X, y)
+        dimension = X.shape[1]
+
+        #profile the leaves
+        low = [-np.inf]*dimension
+        high = [np.inf]*dimension
+
+        for ii, tree in enumerate(self.rf_model.estimators_):
+            self.tree_to_leaf_high[ii] = {}
+            self.tree_to_leaf_low[ii] = {}
+            leaf_ids = tree.apply(X)
+            leaves_this_tree = np.where(tree.tree_.feature==-2)
+
+            def profile_leaf(node, low_, high_):
+                high_tmp1 = high_.copy()
+                low_tmp2 = low_.copy()
+                feature_in_use = tree.tree_.feature[node]
+
+                if feature_in_use == -2:
+                    self.tree_to_leaf_high[ii][node] = high_tmp1
+                    self.tree_to_leaf_low[ii][node] = low_tmp2
+                    return 
+
+                high_tmp1[feature_in_use] = tree.tree_.threshold[node]
+                low_tmp2[feature_in_use] = tree.tree_.threshold[node]
+
+                profile_leaf(tree.tree_.children_left[node], low_.copy(), high_tmp1)
+                profile_leaf(tree.tree_.children_right[node], low_tmp2, high_.copy())
+
+            profile_leaf(0, low, high) 
+
+            for leaf in leaves_this_tree:
+                idx = np.where(leaf_ids==leaf)[0]
+
+                for jj in range(dimension):
+                    if self.tree_to_leaf_high[ii][leaf][jj] == np.inf:
+                        self.tree_to_leaf_high[ii][leaf][jj] = max(X[idx,jj])
+
+                    if self.tree_to_leaf_low[ii][leaf][jj] == -np.inf:
+                        self.tree_to_leaf_high[ii][leaf][jj] = min(X[idx,jj])
+
+
 
         for label in self.labels:
             self.polytope_means[label] = []
@@ -50,7 +93,8 @@ class kdf(KernelDensityGraph):
             total_polytopes_this_label = len(X_)
 
             for polytope in range(total_polytopes_this_label):
-                matched_samples = np.sum(
+
+                '''matched_samples = np.sum(
                     predicted_leaf_ids_across_trees == predicted_leaf_ids_across_trees[polytope],
                     axis=1
                 )
@@ -102,7 +146,7 @@ class kdf(KernelDensityGraph):
                     self.polytope_cov[label].append(
                         tmp_cov
                     )
-        
+        '''
             
     def _compute_pdf(self, X, label, polytope_idx):
         polytope_mean = self.polytope_means[label][polytope_idx]
