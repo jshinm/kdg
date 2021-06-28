@@ -20,6 +20,7 @@ sample_size = np.logspace(
         num=10,
         endpoint=True,
         dtype=int
+)
 
 #%%
 def experiment_kdf(sample, n_estimators=500):
