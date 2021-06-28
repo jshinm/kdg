@@ -16,9 +16,8 @@ p_star = 3
         )'''
 sample_size = [1000,5000,10000]
 n_test = 1000
-reps = 100
-covarice_types = {'diag', 'full', 'spherical'}
-criterion = 'bic'
+reps = 10
+
 n_estimators = 500
 df = pd.DataFrame()
 reps_list = []
@@ -43,8 +42,6 @@ for sample in sample_size:
 
         #train kdf
         model_kdf = kdf(
-            covariance_types = covarice_types,
-            criterion = criterion, 
             kwargs={'n_estimators':n_estimators}
         )
         model_kdf.fit(X, y)
@@ -53,11 +50,9 @@ for sample in sample_size:
                 model_kdf.predict(X_test) == y_test
             )
         )
-
+        print(accuracy_kdf)
         #train feature selected kdf
         model_kdf = kdf(
-            covariance_types = covarice_types,
-            criterion = criterion, 
             kwargs={'n_estimators':n_estimators}
         )
         model_kdf.fit(X[:,:3], y)
@@ -66,7 +61,7 @@ for sample in sample_size:
                 model_kdf.predict(X_test[:,:3]) == y_test
             )
         )
-
+        print(accuracy_kdf_)
         #train rf
         model_rf = rf(n_estimators=n_estimators).fit(X, y)
         accuracy_rf.append(
@@ -83,14 +78,14 @@ df['accuracy rf'] = accuracy_rf
 df['reps'] = reps_list
 df['sample'] = sample_list
 
-df.to_csv('high_dim_res_aic_kdf.csv')
+df.to_csv('high_dim_res_kdf.csv')
 # %% plot the result
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np 
 
-filename1 = 'high_dim_res_aic_kdf.csv'
+filename1 = 'high_dim_res_kdf.csv'
 
 df = pd.read_csv(filename1)
 
@@ -146,10 +141,10 @@ fig, ax = plt.subplots(1,1, figsize=(8,8))
 ax.plot(sample_size, err_rf_med, c="k", label='RF')
 ax.fill_between(sample_size, err_rf_25_quantile, err_rf_75_quantile, facecolor='k', alpha=.3)
 
-ax.plot(sample_size, err_kdf_med, c="r", label='KDF (BIC)')
+ax.plot(sample_size, err_kdf_med, c="r", label='KDF')
 ax.fill_between(sample_size, err_kdf_25_quantile, err_kdf_75_quantile, facecolor='r', alpha=.3)
 
-ax.plot(sample_size, err_kdf_med_, c="b", label='KDF (BIC and feteaure selected)')
+ax.plot(sample_size, err_kdf_med_, c="b", label='KDF (feteaure selected)')
 ax.fill_between(sample_size, err_kdf_25_quantile_, err_kdf_75_quantile_, facecolor='b', alpha=.3)
 
 right_side = ax.spines["right"]
