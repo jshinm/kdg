@@ -84,30 +84,20 @@ class kdf(KernelDensityGraph):
 
             for polytope in range(total_polytopes_this_label):
                 polytope_leaves_across_trees = predicted_leaf_ids_across_trees[polytope]
-                bounds_high = np.zeros(
-                        (
-                        len(polytope_leaves_across_trees),
-                        dimension
-                        ),
-                        dtype=float
-                    )
-                bounds_low = bounds_high.copy()
 
                 for ii, leaf in enumerate(polytope_leaves_across_trees):
-                    bounds_high[ii,:] = self.tree_to_leaf_high[ii][leaf]
-                    bounds_low[ii,:] = self.tree_to_leaf_low[ii][leaf]
+                    bounds_high = self.tree_to_leaf_high[ii][leaf]
+                    bounds_low = self.tree_to_leaf_low[ii][leaf]
 
-                polytope_low = np.min(bounds_low, axis=0)
-                polytope_high = np.max(bounds_high, axis=0)
-                polytope_center = (polytope_high + polytope_low)/2
-                polytope_cov = np.abs( (polytope_high - polytope_low) )/1000
+                    polytope_center = (bounds_high + bounds_low)/2
+                    polytope_cov = np.abs( (bounds_high - bounds_low) )/10
 
-                self.polytope_means[label].append(
-                        polytope_center
-                    )
-                self.polytope_cov[label].append(
-                        np.eye(dimension)*polytope_cov
-                    )
+                    self.polytope_means[label].append(
+                            polytope_center
+                        )
+                    self.polytope_cov[label].append(
+                            np.eye(dimension)*polytope_cov
+                        )
             
     def _compute_pdf(self, X, label, polytope_idx):
         polytope_mean = self.polytope_means[label][polytope_idx]

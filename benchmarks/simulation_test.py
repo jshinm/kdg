@@ -22,7 +22,7 @@ sample_size = np.logspace(
         dtype=int
 
 #%%
-def experiment_kdf(sample, criterion=None, n_estimators=500):
+def experiment_kdf(sample, n_estimators=500):
     X, y = generate_gaussian_parity(sample, cluster_std=0.5)
     X_test, y_test = generate_gaussian_parity(1000, cluster_std=0.5)
     p = np.arange(-1,1,step=0.006)
@@ -64,104 +64,6 @@ def experiment_rf(sample, n_estimators=500):
 
     error = 1 - np.mean(model_rf.predict(X_test)==y_test)
     return hellinger(proba_rf, true_pdf), error
-    
-# %%
-for cov_type in covarice_types:
-    df = pd.DataFrame()
-    hellinger_dist_kdf = []
-    hellinger_dist_rf = []
-    err_kdf = []
-    err_rf = []
-    sample_list = []
-    
-    for sample in sample_size:
-        print('Doing sample %d for %s'%(sample,cov_type))
-
-        res_kdf = Parallel(n_jobs=-1)(
-                    delayed(experiment_kdf)(
-                    sample,
-                    cov_type=cov_type,
-                    criterion=None
-                    ) for _ in range(reps)
-                )
-
-        res_rf = Parallel(n_jobs=-1)(
-            delayed(experiment_rf)(
-                    sample
-                    ) for _ in range(reps)
-                )
-        
-        for ii in range(reps):
-            hellinger_dist_kdf.append(
-                    res_kdf[ii][0]
-                )
-            err_kdf.append(
-                    res_kdf[ii][1]
-                )
-
-            hellinger_dist_rf.append(
-                    res_rf[ii][0]
-                )
-            err_rf.append(
-                    res_rf[ii][1]
-                )
-
-        sample_list.extend([sample]*reps)
-
-    df['hellinger dist kdf'] = hellinger_dist_kdf
-    df['hellinger dist rf'] = hellinger_dist_rf
-    df['error kdf'] = err_kdf
-    df['error rf'] = err_rf
-    df['sample'] = sample_list
-    df.to_csv('simulation_res_'+cov_type+'.csv')
-# %%
-df = pd.DataFrame()
-hellinger_dist_kdf = []
-hellinger_dist_rf = []
-err_kdf = []
-err_rf = []
-sample_list = []
-    
-for sample in sample_size:
-    print('Doing sample %d for %s'%(sample,covarice_types))
-
-    res_kdf = Parallel(n_jobs=-1)(
-                delayed(experiment_kdf)(
-                sample,
-                cov_type=covarice_types,
-                criterion='aic'
-                ) for _ in range(reps)
-            )
-
-    res_rf = Parallel(n_jobs=-1)(
-        delayed(experiment_rf)(
-                sample
-                ) for _ in range(reps)
-            )
-
-    for ii in range(reps):
-        hellinger_dist_kdf.append(
-                res_kdf[ii][0]
-            )
-        err_kdf.append(
-                res_kdf[ii][1]
-            )
-
-        hellinger_dist_rf.append(
-                res_rf[ii][0]
-            )
-        err_rf.append(
-                res_rf[ii][1]
-            )
-
-    sample_list.extend([sample]*reps)
-
-df['hellinger dist kdf'] = hellinger_dist_kdf
-df['hellinger dist rf'] = hellinger_dist_rf
-df['error kdf'] = err_kdf
-df['error rf'] = err_rf
-df['sample'] = sample_list
-df.to_csv('simulation_res_AIC.csv')
 
 #%%
 df = pd.DataFrame()
@@ -172,13 +74,11 @@ err_rf = []
 sample_list = []
     
 for sample in sample_size:
-    print('Doing sample %d for %s'%(sample,covarice_types))
+    print('Doing sample %d for %s'%sample)
 
     res_kdf = Parallel(n_jobs=-1)(
                 delayed(experiment_kdf)(
-                sample,
-                cov_type=covarice_types,
-                criterion='bic'
+                sample
                 ) for _ in range(reps)
             )
 
@@ -210,17 +110,21 @@ df['hellinger dist rf'] = hellinger_dist_rf
 df['error kdf'] = err_kdf
 df['error rf'] = err_rf
 df['sample'] = sample_list
-df.to_csv('simulation_res_BIC.csv')
+df.to_csv('simulation_res.csv')
 # %%
+'''import seaborn as sns
+import matplotlib.pyplot as plt
+
 p = np.arange(-1,1,step=0.006)
 q = np.arange(-1,1,step=0.006)
 xx, yy = np.meshgrid(p,q)
-tmp = np.ones(size(xx))
+tmp = np.ones(xx.shape)
 
 grid_samples = np.concatenate(
             (
                 xx.reshape(-1,1),
-                yy.reshape(-1,1)
+                yy.reshape(-1,1),
+                #tmp.reshape(-1,1)
             ),
             axis=1
     ) 
@@ -237,8 +141,8 @@ fig, ax = plt.subplots(1,1, figsize=(8,8))
 cmap= sns.diverging_palette(240, 10, n=9)
 ax1 = sns.heatmap(data, ax=ax, vmin=0, vmax=1,cmap=cmap)
 ax1.set_xticklabels(['-1','' , '', '', '', '', '','','','','0','','','','','','','','','1'])
-ax1.set_yticklabels(['-1','' , '', '', '', '', '','','','','','','0','','','','','','','','','','','','1'])
+ax1.set_yticklabels(['-1','' , '', '', '', '', '','','','','','','0','','','','','','','','','','','','','1'])
 #ax1.set_yticklabels(['-1','' , '', '', '', '', '','','','' , '', '', '', '', '', '','','','','', '0','','' , '', '', '', '', '','','','','','','','','','','','','1'])
-ax.set_title('True PDF of xor-nxor simulation data',fontsize=24)
-ax.invert_yaxis()
+ax.set_title('Estimated PDF of xor-nxor simulation data',fontsize=24)
+ax.invert_yaxis()'''
 # %%
