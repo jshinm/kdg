@@ -20,11 +20,9 @@ sample_size = np.logspace(
         num=10,
         endpoint=True,
         dtype=int
-        )
-covarice_types = {'diag', 'full', 'spherical'}
 
 #%%
-def experiment_kdf(sample, cov_type, criterion=None, n_estimators=500):
+def experiment_kdf(sample, criterion=None, n_estimators=500):
     X, y = generate_gaussian_parity(sample, cluster_std=0.5)
     X_test, y_test = generate_gaussian_parity(1000, cluster_std=0.5)
     p = np.arange(-1,1,step=0.006)
@@ -37,7 +35,7 @@ def experiment_kdf(sample, cov_type, criterion=None, n_estimators=500):
             ),
             axis=1
     ) 
-    model_kdf = kdf(covariance_types = cov_type,criterion = criterion, kwargs={'n_estimators':n_estimators})
+    model_kdf = kdf(kwargs={'n_estimators':n_estimators})
     model_kdf.fit(X, y)
     proba_kdf = model_kdf.predict_proba(grid_samples)
     true_pdf_class1 = np.array([pdf(x, cov_scale=0.5) for x in grid_samples]).reshape(-1,1)
@@ -213,4 +211,34 @@ df['error kdf'] = err_kdf
 df['error rf'] = err_rf
 df['sample'] = sample_list
 df.to_csv('simulation_res_BIC.csv')
+# %%
+p = np.arange(-1,1,step=0.006)
+q = np.arange(-1,1,step=0.006)
+xx, yy = np.meshgrid(p,q)
+tmp = np.ones(size(xx))
+
+grid_samples = np.concatenate(
+            (
+                xx.reshape(-1,1),
+                yy.reshape(-1,1)
+            ),
+            axis=1
+    ) 
+model_kdf = kdf(kwargs={'n_estimators':500})
+model_kdf.fit(X, y)
+proba_kdf = model_kdf.predict_proba(grid_samples)
+
+data = pd.DataFrame(data={'x':grid_samples[:,0], 'y':grid_samples[:,1], 'z':proba_kdf[:,0]})
+data = data.pivot(index='x', columns='y', values='z')
+
+
+sns.set_context("talk")
+fig, ax = plt.subplots(1,1, figsize=(8,8))
+cmap= sns.diverging_palette(240, 10, n=9)
+ax1 = sns.heatmap(data, ax=ax, vmin=0, vmax=1,cmap=cmap)
+ax1.set_xticklabels(['-1','' , '', '', '', '', '','','','','0','','','','','','','','','1'])
+ax1.set_yticklabels(['-1','' , '', '', '', '', '','','','','','','0','','','','','','','','','','','','1'])
+#ax1.set_yticklabels(['-1','' , '', '', '', '', '','','','' , '', '', '', '', '', '','','','','', '0','','' , '', '', '', '', '','','','','','','','','','','','','1'])
+ax.set_title('True PDF of xor-nxor simulation data',fontsize=24)
+ax.invert_yaxis()
 # %%

@@ -8,24 +8,15 @@ import warnings
 
 class kdf(KernelDensityGraph):
 
-    def __init__(self, covariance_types = 'full', criterion=None, kwargs={}):
+    def __init__(self, kwargs={}):
         super().__init__()
-        
-        if isinstance(covariance_types, str)==False and criterion == None:
-            raise ValueError(
-                    "The criterion cannot be None when there are more than 1 covariance_types."
-                )
-            return
 
         self.polytope_means = {}
         self.polytope_cov = {}
-        self.polytope_cardinality = {}
         self.polytope_mean_cov = {}
         self.tree_to_leaf_high = {}
         self.tree_to_leaf_low = {}
         self.kwargs = kwargs
-        self.covariance_types = covariance_types
-        self.criterion = criterion
 
     def fit(self, X, y):
         r"""
@@ -43,15 +34,15 @@ class kdf(KernelDensityGraph):
         dimension = X.shape[1]
 
         #profile the leaves
-        low = [-np.inf]*dimension
-        high = [np.inf]*dimension
+        low = np.array([-np.inf]*dimension)
+        high = np.array([np.inf]*dimension)
 
         for ii, tree in enumerate(self.rf_model.estimators_):
             self.tree_to_leaf_high[ii] = {}
             self.tree_to_leaf_low[ii] = {}
             leaf_ids = tree.apply(X)
-            leaves_this_tree = np.where(tree.tree_.feature==-2)
-
+            leaves_this_tree = np.where(tree.tree_.feature==-2)[0]
+            
             def profile_leaf(node, low_, high_):
                 high_tmp1 = high_.copy()
                 low_tmp2 = low_.copy()
@@ -78,8 +69,7 @@ class kdf(KernelDensityGraph):
                         self.tree_to_leaf_high[ii][leaf][jj] = max(X[idx,jj])
 
                     if self.tree_to_leaf_low[ii][leaf][jj] == -np.inf:
-                        self.tree_to_leaf_high[ii][leaf][jj] = min(X[idx,jj])
-
+                        self.tree_to_leaf_low[ii][leaf][jj] = min(X[idx,jj])
 
 
         for label in self.labels:
@@ -93,60 +83,31 @@ class kdf(KernelDensityGraph):
             total_polytopes_this_label = len(X_)
 
             for polytope in range(total_polytopes_this_label):
+                polytope_leaves_across_trees = predicted_leaf_ids_across_trees[polytope]
+                bounds_high = np.zeros(
+                        (
+                        len(polytope_leaves_across_trees),
+                        dimension
+                        ),
+                        dtype=float
+                    )
+                bounds_low = bounds_high.copy()
 
-                '''matched_samples = np.sum(
-                    predicted_leaf_ids_across_trees == predicted_leaf_ids_across_trees[polytope],
-                    axis=1
-                )
-                idx = np.where(
-                    matched_samples>0
-                )[0]
+                for ii, leaf in enumerate(polytope_leaves_across_trees):
+                    bounds_high[ii,:] = self.tree_to_leaf_high[ii][leaf]
+                    bounds_low[ii,:] = self.tree_to_leaf_low[ii][leaf]
 
-                if len(idx) == 1:
-                    continue
-                
-                if self.criterion == None:
-                    gm = GaussianMixture(n_components=1, covariance_type=self.covariance_types, reg_covar=1e-4).fit(X_[idx])
-                    self.polytope_means[label].append(
-                            gm.means_[0]
-                    )
-                    self.polytope_cov[label].append(
-                            gm.covariances_[0]
-                    )
-                else:
-                    min_val = np.inf
-                    tmp_means = np.mean(
-                        X_[idx],
-                        axis=0
-                    )
-                    tmp_cov = np.var(
-                        X_[idx],
-                        axis=0
-                    )
-                    
-                    for cov_type in self.covariance_types:
-                        try:
-                            gm = GaussianMixture(n_components=1, covariance_type=cov_type, reg_covar=1e-3).fit(X_[idx])
-                        except:
-                            warnings.warn("Could not fit for cov_type "+cov_type)
-                        else:
-                            if self.criterion == 'aic':
-                                constraint = gm.aic(X_[idx])
-                            elif self.criterion == 'bic':
-                                constraint = gm.bic(X_[idx])
+                polytope_low = np.min(bounds_low, axis=0)
+                polytope_high = np.max(bounds_high, axis=0)
+                polytope_center = (polytope_high + polytope_low)/2
+                polytope_cov = np.abs( (polytope_high - polytope_low) )/1000
 
-                            if min_val > constraint:
-                                min_val = constraint
-                                tmp_cov = gm.covariances_[0]
-                                tmp_means = gm.means_[0]
-                        
-                    self.polytope_means[label].append(
-                        tmp_means
+                self.polytope_means[label].append(
+                        polytope_center
                     )
-                    self.polytope_cov[label].append(
-                        tmp_cov
+                self.polytope_cov[label].append(
+                        np.eye(dimension)*polytope_cov
                     )
-        '''
             
     def _compute_pdf(self, X, label, polytope_idx):
         polytope_mean = self.polytope_means[label][polytope_idx]
