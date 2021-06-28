@@ -75,7 +75,7 @@ err_rf = []
 sample_list = []
     
 for sample in sample_size:
-    print('Doing sample %d for %s'%sample)
+    print('Doing sample %d'%sample)
 
     res_kdf = Parallel(n_jobs=-1)(
                 delayed(experiment_kdf)(
