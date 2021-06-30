@@ -7,7 +7,7 @@ import openml
 from scipy.interpolate import interp1d
 from os import listdir, getcwd 
 
-folder = 'result_feature_selected'
+folder = 'result_cov_nn'
 current_dir = getcwd()
 files = listdir(current_dir+'/'+folder)
 
@@ -46,8 +46,8 @@ for file_ in files:
     ece_rf = np.zeros((len(sample_),reps), dtype=float)
 
     for ii in range(reps):
-        kappa_kdf[:,ii] = df['kappa_kdf'][df['fold']==ii]
-        kappa_rf[:,ii] = df['kappa_rf'][df['fold']==ii]
+        kappa_kdf[:,ii] = df['kappa_kdn'][df['fold']==ii]
+        kappa_rf[:,ii] = df['kappa_nn'][df['fold']==ii]
         delta_kappa[:,ii] = kappa_kdf[:,ii] - kappa_rf[:,ii]
 
         #ax[0].plot(sample_size, delta_kappa[:,ii], c='k', alpha=0.5, lw=1)
@@ -66,7 +66,7 @@ for file_ in files:
     #ax.fill_between(sample_size, mean_rf-1.96*var_kdf, mean_rf+1.96*var_kdf, facecolor='k', alpha=0.5)
 
     ax[0].set_xlabel('Sample size')
-    ax[0].set_ylabel('kappa_kdf - kappa_rf')
+    ax[0].set_ylabel('kappa_kdn - kappa_nn')
     ax[0].set_xscale('log')
     #ax[0][0].legend(frameon=False)
     ax[0].set_title('Delta Kappa', fontsize=24)
@@ -78,8 +78,8 @@ for file_ in files:
 
 
     for ii in range(reps):
-        ece_kdf[:,ii] = df['ece_kdf'][df['fold']==ii]
-        ece_rf[:,ii] = df['ece_rf'][df['fold']==ii]
+        ece_kdf[:,ii] = df['ece_kdn'][df['fold']==ii]
+        ece_rf[:,ii] = df['ece_nn'][df['fold']==ii]
         delta_ece[:,ii] = ece_kdf[:,ii] - ece_rf[:,ii]
 
         #ax[1].plot(sample_size, ece_kdf[:,ii], c='r', alpha=0.5, lw=1)
@@ -127,9 +127,9 @@ qunatiles = np.nanquantile(ece_over_dataset,[.25,.75],axis=0)
 ax[1].fill_between(samples, qunatiles[0], qunatiles[1], facecolor='r', alpha=.3)
 ax[1].plot(samples, np.nanmedian(ece_over_dataset, axis=0), c='r', lw=3)
 
-ax[0].text(50, 0.1, "kdf wins")
-ax[1].text(50, - 0.1, "kdf wins")
-plt.savefig('plots/openML_cc18_all_feature_selected.pdf')
+ax[0].text(50, 0.1, "kdn wins")
+ax[1].text(50, - 0.1, "kdn wins")
+plt.savefig('plots/openML_cc18_all_bic_nn.pdf')
 #plt.show()
 
  # %%

@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 from os import listdir, getcwd 
 
 #%%
-df = pd.read_csv('simulation_res_nn_BIC.csv')
+df = pd.read_csv('simulation_res.csv')
 sample_size = np.logspace(
         np.log10(10),
         np.log10(5000),
@@ -32,8 +32,8 @@ err_rf_75_quantile = []
 
 #%%
 for sample in sample_size:
-    res_kdf = df['hellinger dist kdn'][df['sample']==sample]
-    res_rf = df['hellinger dist nn'][df['sample']==sample]
+    res_kdf = df['hellinger dist kdf'][df['sample']==sample]
+    res_rf = df['hellinger dist rf'][df['sample']==sample]
 
     dist_kdf_med.append(np.median(res_kdf))
     dist_rf_med.append(np.median(res_rf))
