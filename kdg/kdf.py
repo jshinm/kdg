@@ -90,7 +90,7 @@ class kdf(KernelDensityGraph):
                     bounds_low = self.tree_to_leaf_low[ii][leaf]
 
                     polytope_center = (bounds_high + bounds_low)/2
-                    polytope_cov = np.abs( (bounds_high - bounds_low) )/10
+                    polytope_cov = np.abs( (bounds_high - bounds_low) )/2
 
                     self.polytope_means[label].append(
                             polytope_center
