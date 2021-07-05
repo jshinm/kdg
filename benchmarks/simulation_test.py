@@ -113,7 +113,7 @@ df['error rf'] = err_rf
 df['sample'] = sample_list
 df.to_csv('simulation_res.csv')
 # %%
-'''import seaborn as sns
+import seaborn as sns
 import matplotlib.pyplot as plt
 
 p = np.arange(-1,1,step=0.006)
@@ -125,13 +125,13 @@ grid_samples = np.concatenate(
             (
                 xx.reshape(-1,1),
                 yy.reshape(-1,1),
-                #tmp.reshape(-1,1)
+                tmp.reshape(-1,1)
             ),
             axis=1
     ) 
-model_kdf = kdf(kwargs={'n_estimators':500})
-model_kdf.fit(X, y)
-proba_kdf = model_kdf.predict_proba(grid_samples)
+#model_kdf = kdf(kwargs={'n_estimators':1})
+#model_kdf.fit(X, y)
+proba_kdf = model_kdf.rf_model.predict_proba(grid_samples)
 
 data = pd.DataFrame(data={'x':grid_samples[:,0], 'y':grid_samples[:,1], 'z':proba_kdf[:,0]})
 data = data.pivot(index='x', columns='y', values='z')
@@ -145,5 +145,5 @@ ax1.set_xticklabels(['-1','' , '', '', '', '', '','','','','0','','','','','',''
 ax1.set_yticklabels(['-1','' , '', '', '', '', '','','','','','','0','','','','','','','','','','','','','1'])
 #ax1.set_yticklabels(['-1','' , '', '', '', '', '','','','' , '', '', '', '', '', '','','','','', '0','','' , '', '', '', '', '','','','','','','','','','','','','1'])
 ax.set_title('Estimated PDF of xor-nxor simulation data',fontsize=24)
-ax.invert_yaxis()'''
+ax.invert_yaxis()
 # %%
