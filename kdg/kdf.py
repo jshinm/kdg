@@ -8,7 +8,7 @@ import warnings
 
 class kdf(KernelDensityGraph):
 
-    def __init__(self, kwargs={}):
+    def __init__(self, bw=.1, kwargs={}):
         super().__init__()
 
         self.polytope_means = {}
@@ -16,6 +16,7 @@ class kdf(KernelDensityGraph):
         self.polytope_mean_cov = {}
         self.tree_to_leaf_high = {}
         self.tree_to_leaf_low = {}
+        self.bw = bw
         self.kwargs = kwargs
 
     def fit(self, X, y):
@@ -58,7 +59,7 @@ class kdf(KernelDensityGraph):
 
                 profile_leaf(tree.tree_.children_left[node], low_.copy(), high_tmp1)
                 profile_leaf(tree.tree_.children_right[node], low_tmp2, high_.copy())
-
+            
             profile_leaf(0, low, high) 
 
             for leaf in leaves_this_tree:
@@ -90,7 +91,7 @@ class kdf(KernelDensityGraph):
                     bounds_low = self.tree_to_leaf_low[ii][leaf]
 
                     polytope_center = (bounds_high + bounds_low)/2
-                    polytope_cov = np.abs( (bounds_high - bounds_low) )/10
+                    polytope_cov = np.abs( (bounds_high - bounds_low) )*self.bw
 
                     self.polytope_means[label].append(
                             polytope_center
