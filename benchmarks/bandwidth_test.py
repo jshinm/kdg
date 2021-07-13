@@ -11,7 +11,7 @@ sample_size = [1000,5000,10000]
 n_test = 1000
 reps = 10
 
-n_estimators = 500
+n_estimators = 50
 bws = np.arange(.1,1.1,.1)
 df = pd.DataFrame()
 sample_list = []
@@ -28,6 +28,7 @@ for sample in sample_size:
     X_test, y_test = gaussian_sparse_parity(n_test, p_star=p_star, p=p)
 
     for bw in bws:
+        print('Doing sample ',sample,' for bandwidth ',bw)
         err = []
         err_rf = []
         for _ in range(reps):
@@ -64,3 +65,7 @@ df['kdf err 75 quantile'] = err_kdf_75_quantile
 df['rf err med'] = err_rf_med
 df['rf err 25 quantile'] = err_rf_25_quantile
 df['rf err 75 quantile'] = err_rf_75_quantile
+df['sample size'] = sample_list
+df['bandwidth'] = bandwidth
+df.to_csv('bandwidth_res.csv')
+# %%
