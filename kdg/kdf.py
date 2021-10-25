@@ -39,6 +39,8 @@ class kdf(KernelDensityGraph):
         self.labels = np.unique(y)
         self.rf_model = rf(**self.kwargs).fit(X, y)
         feature_dim = X.shape[1]
+        feature_scale = self.rf_model.feature_importances_ + 1e-6
+        #feature_scale = max(feature_scale)/feature_scale
 
         for label in self.labels:
             self.polytope_means[label] = []
@@ -65,12 +67,15 @@ class kdf(KernelDensityGraph):
                 if len(idx) == 1:
                     continue
                 
+                
                 scales = matched_samples[idx]/np.max(matched_samples[idx])
+                scales = scales.reshape(-1,1) @ feature_scale.reshape(1,-1)
+                #print(scales)
                 X_tmp = X_[idx].copy()
                 location_ = np.average(X_tmp, axis=0, weights=scales)
                 X_tmp -= location_
                 
-                sqrt_scales = np.sqrt(scales).reshape(-1,1) @ np.ones(feature_dim).reshape(1,-1)
+                sqrt_scales = np.sqrt(scales)
                 X_tmp *= sqrt_scales
 
                 covariance_model = LedoitWolf(assume_centered=True)
@@ -80,7 +85,9 @@ class kdf(KernelDensityGraph):
                     location_
                 )
                 self.polytope_cov[label].append(
-                    covariance_model.covariance_*len(idx)/sum(scales)
+                    get_near_psd(
+                        covariance_model.covariance_*len(idx)/sum(scales)
+                    ) 
                 )
         
         self.is_fitted = True
@@ -130,3 +137,10 @@ class kdf(KernelDensityGraph):
             Input data matrix.
         """
         return np.argmax(self.predict_proba(X), axis = 1)
+
+def get_near_psd(A):
+    C = (A + A.T)/2
+    eigval, eigvec = np.linalg.eig(C)
+    eigval[eigval < 0] = 0
+
+    return eigvec.dot(np.diag(eigval)).dot(eigvec.T)
