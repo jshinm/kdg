@@ -3,7 +3,7 @@ import numpy as np
 from kdg import kdf
 from kdg.utils import gaussian_sparse_parity, trunk_sim
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier as rf
+from sklearn.ensemble import ExtraTreesClassifier as rf
 #%%
 p = 20
 p_star = 3
@@ -43,9 +43,10 @@ for sample in sample_size:
 
         #train kdf
         model_kdf = kdf(
-            kwargs={'n_estimators':n_estimators}
+            n_estimators=n_estimators,
+            max_features=1
         )
-        
+
         model_kdf.fit(X, y)
         accuracy_kdf.append(
             np.mean(
@@ -61,7 +62,7 @@ for sample in sample_size:
         sample_list.append(sample)
         print(accuracy_kdf)
         #train feature selected kdf
-        
+
 
 df['accuracy kdf'] = accuracy_kdf
 #df['feature selected kdf'] = accuracy_kdf_
@@ -70,14 +71,14 @@ df['accuracy rf'] = accuracy_rf
 df['reps'] = reps_list
 df['sample'] = sample_list
 
-df.to_csv('high_dim_res_kdf_gaussian_treeAvg.csv')
+df.to_csv('high_dim_res_kdf_gaussian_random_splits.csv')
 # %% plot the result
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import numpy as np 
+import numpy as np
 
-filename1 = 'high_dim_res_kdf_gaussian_treeAvg.csv'
+filename1 = 'high_dim_res_kdf_gaussian_random_splits.csv'
 
 df = pd.read_csv(filename1)
 
@@ -143,13 +144,13 @@ for sample in sample_size:
 sns.set_context('talk')
 fig, ax = plt.subplots(1,1, figsize=(8,8))
 
-ax.plot(sample_size, err_rf_med, c="k", label='RF')
+ax.plot(sample_size, err_rf_med, c="k", label='ET')
 ax.fill_between(sample_size, err_rf_25_quantile, err_rf_75_quantile, facecolor='k', alpha=.3)
 
 #ax.plot(sample_size, err_rf_med_, c="g", label='RF (feature selected)')
 #ax.fill_between(sample_size, err_rf_25_quantile_, err_rf_75_quantile_, facecolor='g', alpha=.3)
 
-ax.plot(sample_size, err_kdf_med, c="r", label='KDF')
+ax.plot(sample_size, err_kdf_med, c="r", label='KDF-ET')
 ax.fill_between(sample_size, err_kdf_25_quantile, err_kdf_75_quantile, facecolor='r', alpha=.3)
 
 #ax.plot(sample_size, err_kdf_med_, c="b", label='KDF (feteaure selected)')
@@ -165,6 +166,6 @@ ax.set_xlabel('Sample size')
 ax.set_ylabel('error')
 ax.legend(frameon=False)
 
-plt.savefig('plots/high_dim_gaussian_treeAvg.pdf')
+plt.savefig('plots/high_dim_gaussian_random_splits.pdf')
 
 # %%

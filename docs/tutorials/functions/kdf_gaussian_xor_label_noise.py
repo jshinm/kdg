@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from kdg import kdf
 from kdg.utils import generate_gaussian_parity
-from sklearn.ensemble import RandomForestClassifier as rf
+from sklearn.ensemble import ExtraTreesClassifier as rf
 import random
 
 
@@ -52,11 +52,11 @@ def label_noise_trial(n_samples, p=0.10, n_estimators=500):
     noise_indices = random.sample(range(len(X)), n_noise)
     y[noise_indices] = 1 - y[noise_indices]
 
-    model_kdf = kdf(kwargs={"n_estimators": n_estimators})
+    model_kdf = kdf(n_estimators=n_estimators, max_features=1)
     model_kdf.fit(X, y)
     error_kdf = 1 - np.mean(model_kdf.predict(X_test) == y_test)
 
-    model_rf = rf(n_estimators=n_estimators)
+    model_rf = rf(n_estimators=n_estimators, max_features=1)
     model_rf.fit(X, y)
     error_rf = 1 - np.mean(model_rf.predict(X_test) == y_test)
     return error_kdf, error_rf

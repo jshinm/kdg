@@ -1,7 +1,7 @@
 from .base import KernelDensityGraph
 from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
-from sklearn.ensemble import RandomForestClassifier as rf 
+from sklearn.ensemble import ExtraTreesClassifier as rf
 import numpy as np
 from scipy.stats import multivariate_normal
 import warnings
@@ -67,12 +67,12 @@ class kdf(KernelDensityGraph):
 
                 if len(idx) == 1:
                     continue
-                
+
                 scales = matched_samples[idx]/np.max(matched_samples[idx])
                 X_tmp = X_[idx].copy()
                 location_ = np.average(X_tmp, axis=0, weights=scales)
                 X_tmp -= location_
-                
+
                 sqrt_scales = np.sqrt(scales).reshape(-1,1) @ np.ones(feature_dim).reshape(1,-1)
                 X_tmp *= sqrt_scales
 
@@ -98,15 +98,15 @@ class kdf(KernelDensityGraph):
             self.bias[label] = np.min(likelihoods)/(self.k*total_samples_this_label)
 
         self.is_fitted = True
-        
-            
+
+
     def _compute_pdf(self, X, label, polytope_idx):
         polytope_mean = self.polytope_means[label][polytope_idx]
         polytope_cov = self.polytope_cov[label][polytope_idx]
 
         var = multivariate_normal(
-            mean=polytope_mean, 
-            cov=polytope_cov, 
+            mean=polytope_mean,
+            cov=polytope_cov,
             allow_singular=True
             )
 
@@ -127,7 +127,7 @@ class kdf(KernelDensityGraph):
             (np.size(X,0), len(self.labels)),
             dtype=float
         )
-        
+
         for ii,label in enumerate(self.labels):
             total_polytopes = len(self.polytope_means[label])
             for polytope_idx,_ in enumerate(self.polytope_means[label]):
