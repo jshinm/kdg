@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from kdg.utils import generate_gaussian_parity
+from kdg import kdn
 from tensorflow import keras
 import random
 
@@ -63,12 +64,24 @@ def label_noise_trial_clf(n_samples, p=0.10, n_estimators=500, clf=None):
     "validation_data": (X_val, keras.utils.to_categorical(y_val)),
     "callbacks": [callback]}
 
+    mode = ['none', 'lin'][1]
+
     for i, c in enumerate(clf):
-        if i == 3:
+        if i == 3: #nn
             c.fit(X, keras.utils.to_categorical(y), **fit_kwargs)
             err.append((1 - np.mean(np.argmax(c.predict(X_test), axis=1) == y_test)))
+            #kdn
+            c_kdn = kdn(network=c, weighting_method=mode, T=10, c=1, verbose=False)
+            # c_kdn = kdn(network=c, k=1e-4, weighting_method=mode, T=2, c=1, verbose=False)
+            c_kdn.fit(X, y)
+            err.append(1 - np.mean(c_kdn.predict(X_test) == y_test))
         else:
             c.fit(X, y)
             err.append(1 - np.mean(c.predict(X_test) == y_test))
-        
+
+    #swap orders from [KDF, SVM, RF, NN, KDN, SPORF]
+    #to [SVM, RF, NN, SPORF, KDF, KDN]
+
+    err = np.array(err)[[1,2,3,5,0,4]].tolist()
+
     return err
