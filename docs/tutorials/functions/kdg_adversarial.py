@@ -5,6 +5,7 @@ from kdg.utils import *
 from kdg import kdn
 from tensorflow import keras
 import random
+import gc
 
 
 def get_colors(colors, inds):
@@ -26,10 +27,10 @@ def get_data(n=1000):
 
     return (
         generate_gaussian_parity(n, cluster_std=0.5),
-        generate_spirals(n, noise=0.8, n_class=2),
-        generate_sinewave(n, sigma=0.25),
+        generate_spirals(n*100, noise=0.8/2, n_class=2),
+        generate_sinewave(n*100, sigma=0.25/2.5),
         generate_polynomial(n, a=(1, 3)),
-        generate_ellipse(n),
+        generate_ellipse(n*10),
         generate_steps(n)
         )
 
@@ -62,10 +63,6 @@ def label_noise_trial_clf(n_samples, p=0.10, n_estimators=500, clf=None, ds=0):
         A collection of the estimated error of 
         a given classifier on a test distribution
     """
-    # X, y = generate_gaussian_parity(n_samples, cluster_std=0.5)
-    # X_val, y_val = generate_gaussian_parity(n_samples / 2, cluster_std=0.5)
-    # X_test, y_test = generate_gaussian_parity(1000, cluster_std=0.5)
-
     X, y = get_data(n=n_samples)[ds]
     X_val, y_val = get_data(n=n_samples/2)[ds]
     X_test, y_test = get_data(n=1000)[ds]
@@ -82,24 +79,31 @@ def label_noise_trial_clf(n_samples, p=0.10, n_estimators=500, clf=None, ds=0):
     fit_kwargs = {
     "epochs": 300,
     "batch_size": 32,
-    "verbose": True,
+    "verbose": False,
     "validation_data": (X_val, keras.utils.to_categorical(y_val)),
     "callbacks": [callback]}
 
     mode = ['none', 'lin'][1]
 
     for i, c in enumerate(clf):
-        if i == 3: #nn
+        
+        if i == 3: 
+            #nn
             c.fit(X, keras.utils.to_categorical(y), **fit_kwargs)
             err.append((1 - np.mean(np.argmax(c.predict(X_test), axis=1) == y_test)))
+            
             #kdn
-            c_kdn = kdn(network=c, weighting_method=mode, T=10, c=1, verbose=False)
-            # c_kdn = kdn(network=c, k=1e-4, weighting_method=mode, T=2, c=1, verbose=False)
+            c_kdn = kdn(network=c, weighting_method=mode, T=10, c=1, verbose=False) #T=2, c=1, ashwin
             c_kdn.fit(X, y)
             err.append(1 - np.mean(c_kdn.predict(X_test) == y_test))
         else:
             c.fit(X, y)
             err.append(1 - np.mean(c.predict(X_test) == y_test))
+
+        c = None
+        gc.collect()
+
+    del clf, callback, X, y, X_val, y_val, X_test, y_test
 
     #swap orders from [KDF, SVM, RF, NN, KDN, SPORF]
     #to [SVM, RF, NN, SPORF, KDF, KDN]
